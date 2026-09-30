@@ -192,9 +192,10 @@ summary{cursor:pointer;font-weight:650;color:var(--brand)}
         <div class="f">
           <label>Google Sheet Web App URL (Apps Script /exec)</label>
           <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec">
-          <div class="muted" style="font-size:11.5px;margin-top:4px">Paste the URL after deploying the Apps Script below.</div>
+          <div class="muted" style="font-size:11.5px;margin-top:4px">Pre-filled with the default deployment. You can replace it with your own Apps Script <b>/exec</b> URL if you deploy a separate copy.</div>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
             <button class="btn" id="btnSaveUrl">Save URL</button>
+            <button class="btn" id="btnDefaultUrl">Use default</button>
             <button class="btn" id="btnTest">Test connection</button>
           </div>
         </div>
@@ -393,6 +394,7 @@ const GS_CODE = [
 
 /* ============================ constants ============================ */
 const LS_KEY = "kpi_entry_v1";
+const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbwLI_k4V7yaCKQeGo9V3IaTnLBE_hKr4a9wfmL0oyd6KmuBiMgcljBUribakHFMa1sLgw/exec";
 const SBUS = ["ACCL","AIL","APFIL","ARMCL","MRML","FAL","AAFL","AEFML","ABSL"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const STATUS = {
@@ -445,14 +447,14 @@ function seed(){
   };
   e202608.k18.cause = "VRM-2, third roller problem, thats why VRM-2 had to run with two roller results lower feed rate. Considering the current situation with the revised SMV of VRM-2, OEE is 76.46%";
   return {
-    version:3,
+    version:4,
     sbus:SBUS.slice(),
     months:["2026-08","2026-09"],
     defaultMonth:"2026-08",
     kpis,
     entries:{"2026-08":e202608,"2026-09":{}},
     submits:{},
-    cfg:{url:"",lastSync:""}
+    cfg:{url:DEFAULT_URL,lastSync:""}
   };
 }
 
@@ -469,12 +471,16 @@ function load(){
       if(s && s.kpis){
         s.submits = s.submits || {};
         s.entries = s.entries || {};
-        s.cfg = s.cfg || {url:"",lastSync:""};
+        s.cfg = s.cfg || {url:DEFAULT_URL,lastSync:""};
         if(!(s.version >= 3)){
           s.sbus = SBUS.concat((s.sbus||[]).filter(c=>SBUS.indexOf(c)===-1));
           s.version = 3;
-          localStorage.setItem(LS_KEY, JSON.stringify(s));
         }
+        if(!(s.version >= 4)){
+          if(!s.cfg.url) s.cfg.url = DEFAULT_URL;
+          s.version = 4;
+        }
+        localStorage.setItem(LS_KEY, JSON.stringify(s));
         return s;
       }
     }
@@ -807,6 +813,11 @@ document.getElementById("btnSettings").addEventListener("click", ()=>{
   document.getElementById("gsCode").textContent=GS_CODE;
   document.getElementById("lastSync").textContent = state.cfg.lastSync? "Last sync: "+state.cfg.lastSync : "Never synced.";
   openMask("mSettings");
+});
+document.getElementById("btnDefaultUrl").addEventListener("click", ()=>{
+  state.cfg.url=DEFAULT_URL; save();
+  document.getElementById("cfgUrl").value=DEFAULT_URL;
+  toast("Default Web App URL restored","ok");
 });
 document.getElementById("btnSaveUrl").addEventListener("click", ()=>{
   state.cfg.url=document.getElementById("cfgUrl").value.trim(); save();
